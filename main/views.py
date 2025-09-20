@@ -1,7 +1,8 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django_countries import countries
-from .serializers import CountrySerializer
+from main.serializers import CountrySerializer
+from main.functions import paginate_instances  
 
 
 @api_view(['GET'])
@@ -13,8 +14,16 @@ def country_list(request):
             c for c in countries
             if search_query.lower() in c.name.lower()
         ]
-        serializer = CountrySerializer(filtered_countries, many=True)
     else:
-        serializer = CountrySerializer(countries, many=True)
+        filtered_countries = list(countries)
 
-    return Response(serializer.data)
+    paginated_results, pagination_info = paginate_instances(request, filtered_countries, per_page=10)
+
+    serializer = CountrySerializer(paginated_results, many=True)
+
+    response_data = {
+        'results': serializer.data,
+        'pagination_info': pagination_info,  
+    }
+
+    return Response(response_data)
